@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<title></title>
+		<style>
+			canvas {
+				border: 1px solid black;
+			}
+
+			input {
+				width: 50px;
+			}
+
+			main {
+				display: flex;
+			}
+
+			main>* {
+				display: flex;
+				flex-flow: column;
+				width: 50%;
+			}
+
+			textarea {
+				height: 100%;
+				width: 100%;
+				border: 1px solid black;
+			}
+
+			img.spirits {
+				border: 1px solid black;
+
+			}
+		</style>
+	</head>
+	<body>
+		<header>
+			<p>
+				地图贴图：<img class="spirits" id="spiritsImage" src="img/asset.png" />
+			</p>
+			<p>
+				地图单元格：
+				<input id="xInput" value="30" placeholder="x">X
+				<input id="yInput" value="30" placeholder="y">个
+				<button id="generateMapBtn">生成</button>
+			</p>
+		</header>
+		<main>
+			<section>
+				<div>
+					<button id="map2arrayBtn">地图--&gt;数组</button>
+				</div>
+				<div>
+					<canvas id="cvs"></canvas>
+				</div>
+			</section>
+			<section>
+				<div style="text-align: right;">
+					<button id="array2mapBtn">数组&lt;--地图</button>
+				</div>
+				<div style="flex: auto;">
+					<textarea id="resultEL"></textarea>
+				</div>
+			</section>
+		</main>
+		<script src="js/ImageSpirits.js"></script>
+		<script src="js/Map.js"></script>
+		<script src="js/Cell.js"></script>
+		<script src="js/Game.js"></script>
+		<script>
+			const generateMapBtn = document.getElementById("generateMapBtn");
+			const map2arrayBtn = document.getElementById("map2arrayBtn");
+			const array2mapBtn = document.getElementById("array2mapBtn");
+			const spiritsImage = document.getElementById("spiritsImage");
+			const resultEL = document.getElementById("resultEL");
+			const cvs = document.getElementById("cvs");
+
+
+
+			cvs.addEventListener("mousedown", function(evt) {
+				console.log(evt);
+				evt.preventDefault();
+				let map = window.game.map;
+				if (!map) {
+					return;
+				}
+				let x = Math.floor(evt.offsetX / map.cellWidth);
+				let y = Math.floor(evt.offsetY / map.cellHeight);
+				let cell = map.getCell(x, y);
+				this.lastMouseOverCell = cell;
+				this.mouseDown = true;
+			});
+			cvs.addEventListener("mouseup", function(evt) {
+				this.mouseDown = false;
+				let map = window.game.map;
+				if (!map) {
+					return;
+				}
+				let x = Math.floor(evt.offsetX / map.cellWidth);
+				let y = Math.floor(evt.offsetY / map.cellHeight);
+				let cell = map.getCell(x, y);
+				if (cell === this.lastMouseOverCell) {
+					cell.paintNextSpirit();
+				} else {
+					cell.paintSpirit(this.lastMouseOverCell.spiritIndex);
+				}
+				this.lastMouseOverCell = null;
+			});
+			cvs.addEventListener("mousemove", function(evt) {
+				evt.preventDefault();
+				let map = window.game.map;
+				if (!map) {
+					return;
+				}
+				let x = Math.floor(evt.offsetX / map.cellWidth);
+				let y = Math.floor(evt.offsetY / map.cellHeight);
+				let cell = map.getCell(x, y);
+				if (cell === this.lastMouseOverCell) {
+					return;
+				}
+				if (this.mouseDown) {
+					//等于上一个兄弟的
+					cell.paintSpirit(this.lastMouseOverCell.spiritIndex);
+				}
+			});
+			array2mapBtn.addEventListener("click", function(evt) {
+				let content = resultEL.value;
+				let mapArray = new Function("return (" + content + ");").apply();
+				let x = mapArray[0].length;
+				let y = mapArray.length;
+				let w = x * 20;
+				let h = y * 20;
+				cvs.width = w;
+				cvs.height = h;
+				window.game.loadMap(mapArray);
+
+			});
+			map2arrayBtn.addEventListener("click", function(evt) {
+				let result = "[\n";
+				let cells = window.game.getCells();
+				for (let i = 0; i < cells.length; i++) {
+					if (i !== 0) {
+						result += ",\n";
+					}
+					result += " [";
+					for (let j = 0; j < cells[i].length; j++) {
+						if (j !== 0) {
+							result += ",";
+						}
+						result += cells[i][j].spiritIndex;
+					}
+					result += "]";
+				}
+				result += "\n]";
+				resultEL.textContent = result;
+
+			});
+			generateMapBtn.addEventListener("click", function() {
+				let x = Number(document.getElementById("xInput").value);
+				let y = Number(document.getElementById("yInput").value);
+				let w = x * 20;
+				let h = y * 20;
+				cvs.width = w;
+				cvs.height = h;
+				window.game.initMap(x, y);
+			});
+
+			window.addEventListener("load", function() {
+				window.game = game = new Game(cvs);
+				game.setImageSpirits(spiritsImage);
+				generateMapBtn.click();
+			});
+		</script>
+		<script>
+
+
+
+		</script>
+
+	</body>
+</html>
